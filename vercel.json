@@ -5,7 +5,9 @@
   "installCommand": "npm ci",
   "outputDirectory": "dist",
   "regions": ["iad1"],
+  "rewrites": [{"source":"/api/auth/:action*","destination":"/api/auth?route=:action*"}],
   "functions": {
-    "api/tracker.js": {"includeFiles": "data/baseline.json"}
+    "api/tracker.js": {"includeFiles": "data/baseline.json"},
+    "api/events.js": {"includeFiles": "data/baseline.json"}
   }
 }

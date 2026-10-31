@@ -13,3 +13,7 @@ O fonte já está expandido e contém os ajustes de emblemas, marcas, retratos, 
 Dados reais são lidos em `/api/tracker` no ambiente Vercel, combinando `data/baseline.json` com os eventos autenticados nas Issues deste repositório. A integração GitHub do ChatGPT cria registros sem commits/deploys por partida. O Global Config original foi preservado para rollback; não recebe novos registros depois da migração. O servidor Vite isolado não executa funções Vercel; para validar a atualização real, use uma implantação com a API. Não copie credenciais para o frontend.
 
 Consulte [docs/CHATGPT_TRACKER.md](docs/CHATGPT_TRACKER.md) para partidas e [docs/RECUPERACAO.md](docs/RECUPERACAO.md) para a origem e verificação do código. Novas partidas não exigem commit ou deploy.
+
+Refinamentos: emblemas Mestre/Grão-Mestre restaurados das referências, filtros de histórico, correções/reversões auditáveis, gráficos e sessões baseados em dados confirmados, recordes, cartões PNG, OCR local com revisão, preferências e backup JSON/CSV. A leitura OCR é carregada sob demanda. Não há instalação de aplicativo/PWA.
+
+Login direto está preparado com Auth.js, desabilitado até cadastrar o OAuth dedicado: consulte [docs/LOGIN.md](docs/LOGIN.md). A conexão GitHub do ChatGPT segue independente e funcional. `npm test` cobre composição, concorrência, reversões, validação, segurança, OCR e backups.

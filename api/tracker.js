@@ -8,6 +8,7 @@ const CACHE_KEY = 'matabuks:' + REPOSITORY + ':journal:v1';
 const FRESH_SECONDS = 180;
 let memory, pending;
 const cache = getCache();
+export async function invalidateJournal(){memory=undefined;try{await cache.delete(CACHE_KEY);}catch{/* The next regular refresh remains available. */}}
 
 async function readJournal() {
   const now = Date.now();

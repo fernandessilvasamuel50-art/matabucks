@@ -28,7 +28,7 @@ O corpo contém o marcador literal `<!-- matabuks:tracker:v1 -->`, seguido por u
 
 Somente Issues criadas pela conta proprietária são aceitas; outros autores, PRs e dados inválidos são ignorados. Os registros são públicos, assim como o painel. Nunca inclua credenciais ou dados privados de outros jogadores.
 
-Tipos: `match`, `correction`, `checkpoint` e `probe`. O último é técnico e nunca altera estatísticas.
+Tipos: `match`, `correction`, `checkpoint`, `revert`, `preferences` e `probe`. O último é técnico e nunca altera estatísticas.
 
 Para `match`, o campo `match` tem obrigatoriamente `date` (YYYY-MM-DD, data do registro) e `result` (Vitória ou Derrota). Opcionais:
 
@@ -69,11 +69,27 @@ Exemplo de formato de partida usando a derrota **já registrada** (não criar no
 {"schema":"matabuks/v1","kind":"match","id":"2026-10-30-6","match":{"date":"2026-10-30","result":"Derrota","k":5,"d":6,"a":3,"delta":-96,"scoreAfter":6356,"gold":14548,"performanceScore":268,"teamScore":"30-33"}}
 ```
 
-Uma correção usa `kind:"correction"`, ID próprio, `targetId` da partida e `patch` só com os campos confirmados. Também se pode editar a Issue original com update_issue, preservando seu ID. A partida continua a mesma e o total não aumenta. Fechar uma Issue **não** a remove do tracker.
+Uma correção usa `kind:"correction"`, ID próprio, `targetId` da partida e `patch` só com os campos confirmados. Inclua `expected` com os campos conhecidos da partida lida imediatamente antes (sem id/sourceIssue). A API rejeita/aponta correções concorrentes quando a versão anterior não corresponde. Use `unset:["mvp"]`, por exemplo, para remover uma conquista atribuída indevidamente e voltar a desconhecido. Não remova date/result; remova k/d/a juntos. A partida continua a mesma e o total não aumenta. Prefira novos eventos auditáveis a editar registros anteriores. Fechar uma Issue **não** a remove do tracker.
 
 Conquista desconhecida numa partida do baseline pode já estar no total histórico: a API pede reconciliação sem somar às cegas. Correção de pontos do baseline exige confirmar o checkpoint atual. Correções em partidas posteriores recalculam sua contribuição sem duplicar.
 
-Checkpoint aceita `marks,score,top200Cutoff,laneLevel,elo` confirmados. Não deduza promoção de elo somente por marcas.
+Checkpoint aceita `marks,score,top200Cutoff,top200CutoffDate,laneLevel,elo` confirmados. A data do corte só deve ser preenchida se conhecida; a data de uma partida não confirma a data do ranking. Não deduza promoção de elo somente por marcas.
+
+Reverter uma alteração, sem apagar o registro nem as partidas posteriores:
+
+```json
+{"schema":"matabuks/v1","kind":"revert","id":"revert:ID-UNICO","targetEventId":"ID-DO-EVENTO-ANTERIOR"}
+```
+
+Uma nova reversão pode apontar para a reversão anterior para restaurar o efeito. Baseline não é removido por reversão: corrija suas partidas com correction. Checkpoints posteriores continuam prevalecendo. Após reverter pontos antigos, confira warnings e reconcilie o checkpoint atual antes de anunciar os totais.
+
+Preferências globais que o próprio ChatGPT pode atualizar sem deploy:
+
+```json
+{"schema":"matabuks/v1","kind":"preferences","id":"preferences:ID-UNICO","updates":{"heroSkin":"original","effects":"subtle","lightweight":false}}
+```
+
+Skins aceitas: original, psyops, velho-oeste, soul-fighter, cromatizadora, curtindo-verao, guerreira-cinzas, celulas-supremas. Efeitos: full/subtle/off. Preferências locais de um dispositivo prevalecem sobre as globais; Aparência permite voltar ao padrão. Atualizações de dados e preferências não mudam código/layout. Novas funcionalidades e mudanças de frontend continuam exigindo commit/build/deploy.
 
 ## Concorrência e estimativas
 
@@ -83,7 +99,15 @@ Cada evento é uma Issue separada: duas escritas não sobrescrevem um JSON compa
 
 ## Segurança e disponibilidade
 
-Não há POST público de gravação. GitHub autentica e controla escrita; nenhum token é exposto ao navegador. O formulário **Registrar partida** prepara dados, valida, mostra prévia e abre uma Issue preenchida. O usuário precisa confirmar Create/Submit issue no GitHub com a conta proprietária. Fechar sem publicar não salva. Pela conexão ChatGPT, create_issue faz essa etapa.
+`GET /api/tracker` continua público e somente leitura. `POST /api/events` exige sessão autenticada do proprietário, cookie HttpOnly criptografado e verificação de Origin. Nunca funciona como rota anônima de escrita. O frontend não recebe token GitHub. O login opcional usa Auth.js e valida o ID GitHub estável 234553185, além do login. Sessão de até 8 horas, state/PKCE e revalidação do usuário no GitHub antes de cada escrita. Cada gravação relê o diário, valida/deduplica, cria uma Issue individual e a relê antes de confirmar.
+
+**Estado de ativação:** o login direto depende do OAuth do aplicativo, distinto da integração GitHub do ChatGPT. `GET /api/events` informa configured/authenticated; configured:false significa que o caminho direto não está habilitado. Enquanto isso, Registrar partida prepara a prévia e mantém confirmação autenticada no GitHub ou envio ao ChatGPT. Não declare o login direto concluído sem consentimento OAuth e teste real. Consulte LOGIN.md para a configuração pendente, sem pedir tokens no chat.
+
+Pela conexão ChatGPT, create_issue continua realizando a escrita, independentemente do login do site. Leia integration.audit e warnings: uma correção persistida com ignored:true não foi aplicada e deve ser reconciliada. A interface só marca Publicado após identificar o evento na leitura do painel.
+
+Prints são lidos localmente com Tesseract.js. Até quatro imagens da MESMA partida podem ser combinadas. Campos conflitantes ficam vazios; listas com vários KDAs não selecionam um jogador automaticamente. Medalhas sempre precisam de confirmação humana. Nenhuma imagem de referência de elo/skin é uma partida. A leitura assistida local não substitui a interpretação completa do ChatGPT e nunca grava sem revisão.
+
+Backups: Exportar e recuperar gera JSON com snapshot, eventos e SHA-256 (integridade, não assinatura de autoria), ou CSV das partidas. Importar um backup apenas confere e prepara reconciliação; não substitui automaticamente o estado. Leia a API atual, compare IDs, restaure somente eventos realmente ausentes, em ordem, e preserve checkpoints posteriores. Se houver divergência, peça confirmação do checkpoint final em vez de inventar partidas. Dados importados só entram por escrita autenticada do proprietário.
 
 O repo público permite leitura server-side sem token. Runtime Cache reduz chamadas; entre reconciliações completas a API busca somente Issues alteradas, preservando os registros anteriores. Há releitura completa a cada seis horas. Se GitHub estiver indisponível ou limitar leitura, a API retorna a última leitura válida com `integration.stale:true` e respeita um intervalo antes de tentar de novo; sem leitura válida retorna 503. O frontend preserva os últimos dados e sinaliza a falha. Não declare sucesso com estado antigo. Cache é efêmero; persistência é GitHub. Paginação incompleta falha explicitamente, sem cortar histórico.
 
