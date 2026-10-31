@@ -1,32 +1,13 @@
 import {readFileSync} from 'node:fs';
 import {getCache} from '@vercel/functions';
-import {composeTracker, readIssue, REPOSITORY} from '../lib/tracker.js';
+import {composeTracker, REPOSITORY} from '../lib/tracker.js';
+import {fetchJournal} from '../lib/journal.js';
 
 const baseline = JSON.parse(readFileSync(new URL('../data/baseline.json', import.meta.url), 'utf8'));
 const CACHE_KEY = 'matabuks:' + REPOSITORY + ':journal:v1';
 const FRESH_SECONDS = 180;
 let memory, pending;
 const cache = getCache();
-
-async function retrieve() {
-  const issues = [];
-  for (let page = 1; page <= 100; page++) {
-    const response = await fetch('https://api.github.com/repos/' + REPOSITORY + '/issues?state=all&per_page=100&sort=created&direction=asc&page=' + page, {
-      headers: {Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'Matabuks-Tracker', ...(process.env.GITHUB_READ_TOKEN ? {Authorization: 'Bearer ' + process.env.GITHUB_READ_TOKEN} : {})},
-      signal: AbortSignal.timeout(12000)
-    });
-    if (!response.ok) {
-      const error = Error('github_read_' + response.status);
-      const reset = Number(response.headers.get('x-ratelimit-reset')) * 1000;
-      error.retryAt = Math.max(Date.now() + 60000, Number.isFinite(reset) && (response.status === 403 || response.status === 429) ? reset : 0);
-      throw error;
-    }
-    const items = await response.json();
-    issues.push(...items);
-    if (!response.headers.get('link')?.includes('rel="next"')) return issues.map(readIssue).filter(Boolean);
-  }
-  throw Error('journal_pagination_limit'); // Never silently truncate the history.
-}
 
 async function readJournal() {
   const now = Date.now();
@@ -36,7 +17,7 @@ async function readJournal() {
   if (saved && now - saved.checkedAt < FRESH_SECONDS * 1000) return {...saved, stale: false};
   if (!pending) pending = (async () => {
     try {
-      const value = {records: await retrieve(), checkedAt: Date.now()};
+      const value = await fetchJournal(saved, {token: process.env.GITHUB_READ_TOKEN});
       memory = value;
       try { await cache.set(CACHE_KEY, value, {ttl: 86400, name: 'Matabuks match journal'}); } catch { /* Cache is not the durable data store. */ }
       return {...value, stale: false};
