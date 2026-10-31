@@ -18,6 +18,8 @@ O Global Config `ecfg_baj0r0oupbp4pvcpg9mphdckmgwv`, chave `tracker`, continua p
 
 O checkpoint foi conservado integralmente em `data/baseline.json`: 6356 pontos, 1006 partidas, 507 vitórias, 499 derrotas e seis partidas detalhadas. A correção confirmada para **11 marcas** está na **Issue #1**. Nenhuma partida foi criada para corrigir marcas.
 
+Antes do deploy final, a fonte original já continha cinco partidas posteriores. Elas foram importadas fielmente nas Issues **#3–#7**, mantendo seus IDs originais; o checkpoint **#8** preserva o estado mais recente: **6088 pontos, Mestre III, 8 marcas, 1011 partidas, 508 vitórias, 503 derrotas, WR estimado 50,2%**. As 11 marcas são uma correção histórica, não o estado atual depois dessas cinco partidas. `data/last-known.json` é apenas a última imagem de contingência do frontend; não é uma segunda fonte para novas partidas.
+
 Após esta migração, **não escreva novas partidas no Global Config**. Não há sincronização com Google Sheets. Não mantenha duas fontes concorrentes.
 
 ## Formato
@@ -89,4 +91,4 @@ Se a conexão estiver indisponível, use o formulário manual autenticado ou agu
 
 ## Prova de escrita
 
-A Issue **#2** é um probe técnico reversível, sem partida fictícia. A leitura local confirmou `probeActive:true`, score 6356, marcas 11 e 1006 partidas. Reverta para `active:false`, releia e confira a API de produção para concluir o teste. O relatório final de manutenção registra o resultado.
+A Issue **#2** é um probe técnico reversível, sem partida fictícia. A prévia Vercel `dpl_4DsLfMnGSXLZpGbyTgk7wzg62Kww` confirmou `probeActive:true` com as estatísticas preservadas. O registro foi revertido para `active:false`, fechado e relido pela conexão GitHub. A conferência final da API publicada é registrada no relatório de manutenção.

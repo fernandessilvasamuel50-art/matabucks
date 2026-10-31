@@ -56,3 +56,13 @@ test('manual identity requires sufficient evidence and never collapses anonymous
   assert.throws(() => matchId({date: '2026-10-30', result: 'Vitória'}));
   assert.notEqual(matchId(match), matchId({...match, scoreAfter: 6556}));
 });
+test('migration preserves all five late legacy updates and current rank metadata', () => {
+  const latest = JSON.parse(readFileSync(new URL('../data/last-known.json', import.meta.url)));
+  const oldIds = new Set(baseline.history.map(m => m.id));
+  const additions = latest.history.filter(m => !oldIds.has(m.id)).reverse();
+  const records = [{schema: 'matabuks/v1', kind: 'checkpoint', id: 'historical-marks', updates: {marks: 11}, number: 1}, ...additions.map((m, i) => {const {id, ...value} = m; return event(id, value, i + 3)}), {schema: 'matabuks/v1', kind: 'checkpoint', id: 'final-marks', updates: {marks: latest.marks, elo: latest.elo, score: latest.score}, number: 8}];
+  const data = composeTracker(baseline, records);
+  for (const key of ['score', 'lastDelta', 'marks', 'elo', 'markThreshold', 'rankDivision', 'matches', 'wins', 'losses', 'winRatePercent', 'mvps', 'pentakills', 'rankS', 'rankA']) assert.equal(data[key], latest[key], key);
+  assert.deepEqual(data.history.map(m => m.id), latest.history.map(m => m.id));
+  assert.equal(data.integration.warnings.length, 0);
+});

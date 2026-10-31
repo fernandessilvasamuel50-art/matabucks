@@ -4,13 +4,13 @@ import {motion,AnimatePresence} from "motion/react";
 import {Swords,Shield,Crown,Skull,Star,Flame,Trophy,Target,Medal,ChevronLeft,ChevronRight,X,Menu,ArrowUpRight,CheckCircle2,Info,ScrollText,Clock,LockKeyhole,Play,BarChart3,Sparkles,Compass} from "lucide-react";
 import "./style.css";
 import "./enhancements.css";
-import baseline from "./data/baseline.json";
+import lastKnown from "./data/last-known.json";
 import RankCrest from "./components/RankCrest.jsx";
 import Medals, {MedalIcon} from "./components/Medals.jsx";
 import Modal from "./components/Modal.jsx";
 import MatchForm from "./components/MatchForm.jsx";
 const AS="/img/";
-const fallback={...baseline,marks:11,statisticsEstimated:true};
+const fallback={...lastKnown,statisticsEstimated:true};
 const skinSet=[
  {id:"original",name:"A Rosa do Deserto",officialName:"Samira, a Rosa do Deserto",focus:"65%",color:"#cf9b78"},
  {id:"psyops",name:"PsyOps",officialName:"Samira PsyOps",focus:"71%",color:"#a491eb"},
