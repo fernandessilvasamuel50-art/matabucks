@@ -1,85 +1,92 @@
-# Atualizações do Matabuks pelo ChatGPT
+# ChatGPT → Matabuks: onde atualizar partidas
 
-## Localização
+## Identificação rápida
 
-- Projeto: Matabuks — Samirismo.
-- Produção: https://matabuks-samira-fernandessilvasamuel50-arts-projects.vercel.app
-- Projeto Vercel: `matabuks-samira`, ID `prj_btJAZlLCRzqEuYLadb3E2CyjEar1`.
-- Equipe Vercel: `team_QVBZXqHYuJyAgIL5yYOTszgb`.
-- Repositório: consulte o remoto Git `origin`. O deploy original era direto, sem vínculo GitHub. O destino remoto ainda depende de um repositório acessível; não invente uma URL.
-- Fonte oficial de dados: **Global Config**, ID `ecfg_baj0r0oupbp4pvcpg9mphdckmgwv`, chave **`tracker`**.
-- A API `GET /api/tracker` usa `get("tracker")` de `@vercel/global-config`. O código recuperado não lê Google Sheets; não presuma sincronização com uma planilha.
-- O React consulta a API ao abrir e a cada 30 segundos. A API usa cache compartilhado de 5 segundos e stale-while-revalidate de 30 segundos.
+- Repositório confirmado: https://github.com/fernandessilvasamuel50-art/matabucks.
+- Proprietário autorizado: **fernandessilvasamuel50-art**.
+- Site: https://matabuks-samira-fernandessilvasamuel50-arts-projects.vercel.app
+- Vercel: projeto `matabuks-samira`, ID `prj_btJAZlLCRzqEuYLadb3E2CyjEar1`, equipe `team_QVBZXqHYuJyAgIL5yYOTszgb`.
+- **Fonte oficial atual:** checkpoint histórico imutável em `data/baseline.json` + registros autenticados nas **Issues deste repositório**. A API compõe os dois, recalcula e remove duplicidades.
+- **Integração de escrita: GitHub**, já testada. **Não edite arquivos, não faça commits e não faça deploy para cadastrar partidas.**
+- Leitura pública do estado final: `GET /api/tracker`.
+- Leitura autenticada: ferramenta GitHub `fetch` em `https://api.github.com/repos/fernandessilvasamuel50-art/matabucks/issues?state=all&per_page=100&sort=created&direction=asc`. Percorra as páginas de Link, inclua registros fechados e exclua pull requests.
+- Escrita: **create_issue** neste repositório. Edição: **fetch_issue** e **update_issue**.
 
-## Ferramentas autenticadas
+## Migração e checkpoint
 
-Use a integração **Vercel**, mantendo os IDs de configuração e equipe acima.
+O Global Config `ecfg_baj0r0oupbp4pvcpg9mphdckmgwv`, chave `tracker`, continua preservado para rollback. Nesta sessão a operação de itens rejeitou o ID válido antes da requisição: `INVALID_ARGUMENT`, padrão `^ecfg_`. A falha não é corrigida trocando IDs ou aumentando permissões.
 
-Leitura: `get_edge_config_items({edgeConfigId, teamId})`; selecione o valor do item `tracker`. A leitura pública em `/api/tracker` é útil para conferir a publicação, mas pode ter cache.
+O checkpoint foi conservado integralmente em `data/baseline.json`: 6356 pontos, 1006 partidas, 507 vitórias, 499 derrotas e seis partidas detalhadas. A correção confirmada para **11 marcas** está na **Issue #1**. Nenhuma partida foi criada para corrigir marcas.
 
-Escrita: `patch_edge_config_items({edgeConfigId, teamId, requestBody:{items:[{operation:"upsert",key:"tracker",value:trackerCompleto}]}})`.
+Após esta migração, **não escreva novas partidas no Global Config**. Não há sincronização com Google Sheets. Não mantenha duas fontes concorrentes.
 
-**`upsert` substitui o valor inteiro da chave.** Primeiro leia, preserve os campos existentes e mescle o histórico completo. Nunca envie apenas a nova partida como valor de `tracker`.
+## Formato
 
-Essas ferramentas usam a autenticação da integração; não precisam de tokens na conversa, no frontend ou no GitHub. Não existe rota pública de escrita nesta aplicação.
+O corpo contém o marcador literal `<!-- matabuks:tracker:v1 -->`, seguido por um bloco cercado com três crases e linguagem `json`. Dentro dele, um objeto com `schema:"matabuks/v1"`, `kind`, `id` estável e os campos do tipo. A função `issueBody(event)` em `lib/tracker.js` gera esse formato.
 
-## Estado verificado em 30/10/2026
+Somente Issues criadas pela conta proprietária são aceitas; outros autores, PRs e dados inválidos são ignorados. Os registros são públicos, assim como o painel. Nunca inclua credenciais ou dados privados de outros jogadores.
 
-`GET /api/tracker` retornou HTTP 200 com `version:3`, `score:6356`, `previousScore:6452`, `lastDelta:-96`, `marks:12`. O registro `2026-10-30-6` já existe: derrota, KDA 5/6/3, ouro 14548, desempenho 268, placar 30-33. **Não o cadastre novamente.**
+Tipos: `match`, `correction`, `checkpoint` e `probe`. O último é técnico e nunca altera estatísticas.
 
-O usuário confirmou escrita bem-sucedida em outra conversa do ChatGPT. Nesta sessão Codex, leitura dos itens e escrita foram rejeitadas **antes da requisição**, com `INVALID_ARGUMENT`, padrão `^ecfg_`, apesar do ID válido. O teste temporário não foi criado. Não anuncie escrita comprovada nesta sessão nem tente outro ID.
+Para `match`, o campo `match` tem obrigatoriamente `date` (YYYY-MM-DD, data do registro) e `result` (Vitória ou Derrota). Opcionais:
 
-## Estrutura
+- `k,d,a`: inteiros não negativos, os três juntos.
+- `delta`: variação assinada; `scoreAfter`: score final confirmado.
+- `marksAfter`: marcas finais confirmadas; não deduza por resultado, por causa de escudos/bônus.
+- `mvp:true`, `svp:true`, `rank:"S"` ou `rank:"A"`, `legendaryS:true`.
+- `triplekills,quadrakills,pentakills`: quantidades confirmadas. Duas pentas = `pentakills:2`. Uma penta não significa uma triple adicional.
+- `gold,performanceScore,teamScore` (ex.: 30-33), `nickname,champion,mode`.
 
-`tracker` contém checkpoint (`score`, `previousScore`, `lastDelta`, `updatedAt`, `version`), ranking, totais históricos e `history`, em ordem do mais recente para o mais antigo.
+Desconhecidos ficam ausentes, não zero/false. MVP exige vitória e SVP exige derrota. S/A e multikills podem coexistir com MVP/SVP.
 
-Uma partida confirmada existente:
+## Procedimento idempotente por print
+
+1. Leia a API e as Issues, incluindo fechadas. Confira conta e campeão; imagens de referência não são partidas.
+2. Extraia somente fatos visíveis/confirmados. Não invente horário.
+3. Procure o ID oficial, se disponível, e os IDs existentes. Compare data, resultado, KDA, delta, score final, ouro e placar. **A derrota 2026-10-30-6, 5/6/3, -96, score 6356 já existe no baseline. Não cadastrar novamente.**
+4. Use um ID estável com caracteres `[A-Za-z0-9_.:/-]`. O formulário usa `matchId(match)`. Reutilize o ID em repetição; se a evidência não distingue duas partidas legítimas, peça esclarecimento.
+5. Crie uma Issue com título `[tracker] ...`, marcador e bloco JSON válido. A conexão deve publicar como fernandessilvasamuel50-art.
+6. Releia para confirmar autor, corpo, ID e campos. Em gravação com resposta incerta, leia antes de repetir.
+7. O servidor acrescenta sem substituir o histórico. Deduplica por ID e pela assinatura conhecida (data/resultado/KDA/delta/score final). Recalcula partidas, vitórias, derrotas, WR e conquistas comprovadas.
+8. Confira a API após cache: 180 segundos mais a consulta do navegador a cada 30 segundos. Normalmente leva alguns minutos. Não use deploy para atualizar dados.
+9. Confirme um único registro, score, marcas e totais pertinentes antes de comunicar sucesso.
+
+Se `scoreAfter` divergir de score anterior + delta, a pontuação final confirmada prevalece e `integration.warnings` pede reconciliação. Não invente partidas intermediárias. Sem pontos conhecidos, conta-se a partida e conserva-se o score anterior, com variação desconhecida.
+
+## Exemplos e correções
+
+Correção real já aplicada na Issue #1:
 
 ```json
-{
-  "id": "2026-10-30-6",
-  "date": "2026-10-30",
-  "result": "Derrota",
-  "k": 5, "d": 6, "a": 3,
-  "delta": -96,
-  "scoreAfter": 6356,
-  "teamScore": "30-33",
-  "gold": 14548,
-  "performanceScore": 268
-}
+{"schema":"matabuks/v1","kind":"checkpoint","id":"confirmed-marks-2026-10-30-match-6","updates":{"marks":11}}
 ```
 
-Obrigatórios para uma partida deste fluxo: `id` estável, `date` do registro e `result` confirmado (`Vitória` ou `Derrota`). Para alterar o Champion Score, exija `scoreAfter` confirmado ou `delta` confirmado com checkpoint anterior confiável. Quando KDA for conhecido, registre `k`, `d`, `a` juntos como inteiros não negativos. Sem evidência, omita os campos ou preserve `null`; não use zero para representar desconhecido.
+Exemplo de formato de partida usando a derrota **já registrada** (não criar novamente):
 
-Opcionais: `delta`, `scoreAfter`, `k`, `d`, `a`, `teamScore`, `gold`, `performanceScore`, `mvp`, `triplekills`, `quadrakills`, `pentakills`, `rank`, `nickname`, `champion`, horário e identificador oficial da partida quando disponíveis. Campos novos devem ser compatíveis com os existentes.
+```json
+{"schema":"matabuks/v1","kind":"match","id":"2026-10-30-6","match":{"date":"2026-10-30","result":"Derrota","k":5,"d":6,"a":3,"delta":-96,"scoreAfter":6356,"gold":14548,"performanceScore":268,"teamScore":"30-33"}}
+```
 
-## Procedimento idempotente
+Uma correção usa `kind:"correction"`, ID próprio, `targetId` da partida e `patch` só com os campos confirmados. Também se pode editar a Issue original com update_issue, preservando seu ID. A partida continua a mesma e o total não aumenta. Fechar uma Issue **não** a remove do tracker.
 
-1. Leia o item atual e guarde uma cópia transitória. Confirme projeto e equipe.
-2. Extraia apenas os fatos comprovados no print ou confirmados pelo usuário. Data de registro não é automaticamente horário da partida.
-3. Procure primeiro o identificador oficial; depois o `id` existente. Compare também data, resultado, KDA, variação, pontuação final, ouro e placar. O exemplo acima já registrado deve resultar em nenhuma escrita.
-4. Se não houver ID oficial, atribua um ID local estável após ler os IDs existentes. Não gere novo ID em uma repetição da mesma atualização. Duas partidas reais podem ter o mesmo KDA; se a evidência não distinguir, peça esclarecimento antes de gravar.
-5. Acrescente o novo registro preservando todos os anteriores e os campos desconhecidos do tracker. Para uma correção, altere o mesmo registro, sem acrescentar cópia.
-6. Atualize o checkpoint de pontos. Exemplo já aplicado: 6452 - 96 = 6356. Se o score final confirmado divergir do esperado, mantenha esse score como referência e registre a diferença para reconciliação; não invente partidas intermediárias.
-7. Atualize somente totais sustentados pelos dados. Partidas/vitórias/derrotas históricos (1006/507/499) e WR 50,4% são estimativas derivadas de uma taxa inicial arredondada, não números oficiais da Riot. O histórico parcial não permite recalcular KDA vitalício. Não altere marcas sem confirmação; 12 é o último valor informado antes da derrota.
-8. Releia imediatamente antes de escrever. Se o conteúdo mudou, refaça a mesclagem sobre a versão nova. Grave o objeto completo usando `upsert`.
-9. Releia pela integração e confira registro, quantidade de ocorrências, todos os IDs anteriores, score e campos preservados. Em timeout de gravação, leia antes de tentar novamente.
-10. Consulte `/api/tracker` até refletir o estado atual, respeitando cache e atualização do frontend. Confira faixa e últimas partidas. Informe resultado e eventuais pendências ao usuário.
+Conquista desconhecida numa partida do baseline pode já estar no total histórico: a API pede reconciliação sem somar às cegas. Correção de pontos do baseline exige confirmar o checkpoint atual. Correções em partidas posteriores recalculam sua contribuição sem duplicar.
 
-## Conquistas e correções
+Checkpoint aceita `marks,score,top200Cutoff,laneLevel,elo` confirmados. Não deduza promoção de elo somente por marcas.
 
-- Registre `mvp:true` ou contagens de triples/quadras/pentas somente com prova. Ausência de prova não significa `false` ou zero.
-- Preserve os totais históricos confirmados e o baseline. Some apenas conquistas novas e comprovadas. Ao corrigir um registro, aplique a diferença entre a conquista antiga conhecida e a nova; repetir a correção não pode somar de novo.
-- `triplekillsConfirmedSinceBaseline` representa triplas confirmadas desde o início do acompanhamento. Não é total vitalício.
-- O frontend atual mostra um destaque por partida, com precedência penta, triple, MVP e rank. `quadrakills` pode ser armazenado, mas não tem destaque próprio implementado. Não prometa renderização que não existe.
-- Uma correção retroativa de score não deve reescrever o checkpoint atual sem reconciliar registros posteriores. Preserve evidências e peça os dados faltantes.
+## Concorrência e estimativas
 
-## Concorrência e indisponibilidade
+Cada evento é uma Issue separada: duas escritas não sobrescrevem um JSON compartilhado nem apagam partidas anteriores. A composição usa ordem do número da Issue e deduplica IDs. Cadastre lotes na ordem cronológica confirmada.
 
-O Global Config é persistente e independente dos deploys. Porém a ferramenta atual substitui a chave inteira e **não expõe comparação de versão/digest na escrita**. A releitura reduz conflitos, mas não torna a operação atômica. Execute um único escritor por vez; não atualize simultaneamente em chats diferentes. `version` é informativo, não um bloqueio.
+1006 partidas, 507 vitórias, 499 derrotas e 50,4% vieram de um baseline estimado por taxa arredondada. Novas partidas são contadas exatamente, mas o total permanece identificado como estimativa. Não calcule KDA vitalício com o histórico parcial. SVPs e quadras contam confirmados desde a migração, sem inventar um total vitalício.
 
-Se precisar de escrita simultânea com garantia, será necessária uma operação autenticada de compare-and-swap ou outra solução que serialize alterações. Essa garantia não foi implementada nesta manutenção de cabeçalho. Não restaure um snapshot antigo sobre dados mais novos.
+## Segurança e disponibilidade
 
-Se a ferramenta estiver indisponível, preserve o registro proposto sem aplicá-lo, confira a API e explique o erro. Reabra/reconecte a integração Vercel pela interface do usuário e tente ler novamente; as ferramentas de gerenciamento disponíveis nesta sessão não oferecem reinicialização/reconexão. Não desinstale a conexão como tentativa automática e não peça tokens. Aumentar permissões não corrige uma falha de validação de esquema.
+Não há POST público de gravação. GitHub autentica e controla escrita; nenhum token é exposto ao navegador. O formulário **Registrar partida** prepara dados, valida, mostra prévia e abre uma Issue preenchida. O usuário precisa confirmar Create/Submit issue no GitHub com a conta proprietária. Fechar sem publicar não salva. Pela conexão ChatGPT, create_issue faz essa etapa.
 
-Teste seguro de escrita, quando a ferramenta voltar: crie uma chave temporária exclusiva fora de `tracker`, leia para confirmar, remova só essa chave e leia para confirmar a remoção. Compare `tracker` antes e depois. Nunca crie uma partida fictícia ou altere estatísticas reais para testar acesso.
+O repo público permite leitura server-side sem token. Runtime Cache reduz chamadas. Se GitHub estiver indisponível ou limitar leitura, a API retorna a última leitura válida com `integration.stale:true`; sem leitura válida retorna 503. O frontend preserva os últimos dados e sinaliza a falha. Não declare sucesso com estado antigo. Cache é efêmero; persistência é GitHub. Paginação incompleta falha explicitamente, sem cortar histórico.
+
+Se a conexão estiver indisponível, use o formulário manual autenticado ou aguarde reconexão. Não peça tokens, não substitua baseline, não volte a gravar silenciosamente no Global Config. Tornar o repo privado exige configurar leitura autenticada antes.
+
+## Prova de escrita
+
+A Issue **#2** é um probe técnico reversível, sem partida fictícia. A leitura local confirmou `probeActive:true`, score 6356, marcas 11 e 1006 partidas. Reverta para `active:false`, releia e confira a API de produção para concluir o teste. O relatório final de manutenção registra o resultado.

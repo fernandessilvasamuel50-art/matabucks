@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
+  "outputDirectory": "dist",
+  "regions": ["iad1"],
+  "functions": {
+    "api/tracker.js": {"includeFiles": "data/baseline.json"}
+  }
+}

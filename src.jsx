@@ -3,32 +3,30 @@ import {createRoot} from "react-dom/client";
 import {motion,AnimatePresence} from "motion/react";
 import {Swords,Shield,Crown,Skull,Star,Flame,Trophy,Target,Medal,ChevronLeft,ChevronRight,X,Menu,ArrowUpRight,CheckCircle2,Info,ScrollText,Clock,LockKeyhole,Play,BarChart3,Sparkles,Compass} from "lucide-react";
 import "./style.css";
+import "./enhancements.css";
+import baseline from "./data/baseline.json";
+import RankCrest from "./components/RankCrest.jsx";
+import Medals, {MedalIcon} from "./components/Medals.jsx";
+import Modal from "./components/Modal.jsx";
+import MatchForm from "./components/MatchForm.jsx";
 const AS="/img/";
-const fallback={
- score:6452,top200Cutoff:8956,elo:"Mestre II",marks:12,markThreshold:20,laneLevel:9,peakScore:7742,matches:1005,
- wins:507,losses:498,winRatePercent:50.4,mvps:121,pentakills:12,rankS:69,legendaryS:6,rankA:101,triplekillsConfirmedSinceBaseline:1,
- history:[
- {id:"2026-10-30-5",date:"2026-10-30",result:"Vitória",k:4,d:1,a:3,delta:57,scoreAfter:6452},
- {id:"2026-10-30-4",date:"2026-10-30",result:"Derrota",k:11,d:5,a:3,delta:-73,scoreAfter:6395},
- {id:"2026-10-30-3",date:"2026-10-30",result:"Vitória",delta:64,scoreAfter:6468,triplekills:1},
- {id:"2026-10-30-2",date:"2026-10-30",result:"Vitória",delta:55,scoreAfter:6404},
- {id:"2026-10-30-1",date:"2026-10-30",result:"Vitória",delta:113,scoreAfter:6349,mvp:true}]};
+const fallback={...baseline,marks:11,statisticsEstimated:true};
 const skinSet=[
- {id:"original",name:"Clássica",subtitle:"Samira original",tier:"ORIGINAL"},
- {id:"psyops",name:"PsyOps",subtitle:"Operações Psíquicas",tier:"ÉPICA"},
- {id:"velho-oeste",name:"Velho Oeste",subtitle:"High Noon",tier:"ÉPICA"},
- {id:"celulas-supremas",name:"Células Supremas",subtitle:"Supreme Cells",tier:"ESPECIAL"},
- {id:"soul-fighter",name:"Soul Fighter",subtitle:"Torneio das Almas",tier:"LENDÁRIA"},
- {id:"cromatizadora",name:"Cromatizadora",subtitle:"Chromacrash",tier:"ÉPICA"},
- {id:"guerreira-cinzas",name:"Guerreira das Cinzas",subtitle:"Ashen Avenger",tier:"ESPECIAL"},
- {id:"curtindo-verao",name:"Curtindo o Verão",subtitle:"Summer Party",tier:"ÉPICA"}];
+ {id:"original",name:"A Rosa do Deserto",officialName:"Samira, a Rosa do Deserto",focus:"65%",color:"#cf9b78"},
+ {id:"psyops",name:"PsyOps",officialName:"Samira PsyOps",focus:"71%",color:"#a491eb"},
+ {id:"velho-oeste",name:"Velho Oeste",officialName:"Samira Velho Oeste",focus:"50%",color:"#e9a448"},
+ {id:"soul-fighter",name:"Soul Fighter",officialName:"Samira Soul Fighter",focus:"66%",color:"#e7799a"},
+ {id:"cromatizadora",name:"Cromatizadora",officialName:"Samira Cromatizadora",focus:"69%",color:"#e37ae5"},
+ {id:"curtindo-verao",name:"Curtindo o Verão",officialName:"Samira Curtindo o Verão",focus:"57%",color:"#85e5d5"},
+ {id:"guerreira-cinzas",name:"Guerreira das Cinzas",officialName:"Samira Guerreira das Cinzas",focus:"56%",color:"#b1a8ef"},
+ {id:"celulas-supremas",name:"Células Supremas",officialName:"Samira Células Supremas",focus:"73%",color:"#e5c767"}
+];
 const n=v=>Number(v??0).toLocaleString("pt-BR");
 const Avatar=({className=""})=><img className={"avatar "+className} src={AS+"samira-portrait.webp"} alt="Retrato da Samira" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src=AS+"samira-original.jpg"}}/>;
 function Badge({result}){const win=result==="Vitória";return <span className={"result-tag "+(win?"win":"loss")}>{win?"V":"D"}</span>}
-function Extra({m}){let text=m.pentakills?"PENTAKILL":m.triplekills?"TRIPLE KILL":m.mvp?"MVP":m.rank?"RANK "+m.rank:null;
-return text?<span className={"extra-tag "+(m.triplekills?"triple":m.pentakills?"penta":"mvp")}>{m.triplekills?<Flame size={12}/>:m.mvp?<Star size={12}/>:<Trophy size={12}/>} {text}</span>:null}
+function Extra({m}){return <Medals match={m} compact/>}
 function FeedCard({m}){return <div className="feed-card" title={m.result+" "+(m.delta>0?"+":"")+m.delta+" pontos"}>
-<Avatar className="feed-avatar"/><Badge result={m.result}/><b className={"points-delta "+(m.delta<0?"negative":"")}>{m.delta>0?"+":""}{m.delta}</b>
+<Avatar className="feed-avatar"/><Badge result={m.result}/><b className={"points-delta "+(m.delta<0?"negative":"")}>{m.delta==null?"—":(m.delta>0?"+":"")+m.delta}</b>
 {m.k!=null&&<span className="feed-kda">{m.k}/{m.d}/{m.a}</span>}<Extra m={m}/>
 </div>}
 function MatchTicker({history}){const recent=[...(history||[])].slice(0,8).reverse();
@@ -53,7 +51,7 @@ function Hero({d,history}){return <section className="hero-wrap" id="inicio">
 <Header/>
 <div className="hero-left"><h1>MATABUKS</h1><p>“ESTILO É TUDO.”<small>— SAMIRA</small></p></div>
 <div className="hero-profile">
- <div className="rank-crest"><div className="rank-ambient"></div><img src={AS+(String(d.elo||"").toLowerCase().includes("grão")?"grandmaster-rank.webp":"master-rank.webp")} alt={"Emblema "+(d.elo||"Mestre II")}/></div>
+ <RankCrest elo={d.elo}/>
  <h2>{d.elo??"Mestre II"}</h2>
  <div className="rank-marks">
   <img src={AS+"mark-diamond.webp"} alt="Marca ranqueada"/>
@@ -80,24 +78,54 @@ function Overview({d}){const stats=[
  {label:"TRIPLES REGISTRADAS",value:n(d.triplekillsConfirmedSinceBaseline??1)+"+",icon:Flame}
 ];return <section className="panel overview" id="estatisticas"><Corners/><div className="panel-simple-head"><h2>VISÃO GERAL</h2><span>COM SAMIRA</span></div>
 <div className="overview-grid">{stats.map((x,i)=><motion.div className="metric" key={x.label} initial={{opacity:0,y:12}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:i*.05}}><x.icon className="metric-icon" size={24} strokeWidth={1.65}/><div><strong>{x.value}</strong><span>{x.label}</span></div></motion.div>)}</div>
-<div className="overview-note">Triplas: registradas desde o início do acompanhamento.</div>
+<div className="overview-note">Partidas, vitórias e win rate são estimativas históricas. Triplas: confirmadas desde o início do acompanhamento.</div>
 </section>}
 function DragonRole({d}){return <section className="panel dragon" id="rota"><Corners/><h2>ROTA DO DRAGÃO</h2><div className="dragon-emblem"><img src={AS+"dragon-route.webp"} alt="Emblema dourado da Rota do Dragão"/></div><p>NÍVEL {n(d.laneLevel??9)}</p><small>ESPECIALIDADE</small><div className="role-chips"><span>ADC</span><span>ATIRADORA</span><span>DUO LANE</span></div></section>}
-function Skins(){const scrollRef=useRef(null),[selected,setSelected]=useState(null);const move=dir=>scrollRef.current?.scrollBy({left:dir*360,behavior:"smooth"});return <section className="panel skins" id="skins"><Corners/><div className="panel-heading skin-header"><div className="medallion"><Avatar/></div><div><h2>ARSENAL DA SAMIRA</h2><small>O ESTILO NUNCA MORRE.</small></div></div>
-<div className="skins-gallery-shell"><button className="gallery-arrow prev" onClick={()=>move(-1)} aria-label="Skins anteriores"><ChevronLeft/></button><div className="skins-gallery" ref={scrollRef}>{skinSet.map((s,i)=><button className="skin-card" key={s.id} onClick={()=>setSelected(i)}><img src={AS+"samira-"+s.id+".jpg"} loading="lazy" alt={"Arte de Samira "+s.name}/><div className="skin-title"><b>Samira</b><span>{s.name}</span></div></button>)}</div><button className="gallery-arrow next" onClick={()=>move(1)} aria-label="Próximas skins"><ChevronRight/></button></div>
-<div className="gallery-pagination"><span className="active"></span><span></span><span></span><span></span><span></span></div>
-<AnimatePresence>{selected!==null&&<motion.div className="modal-shade" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setSelected(null)} role="presentation"><motion.div className="skin-modal" role="dialog" aria-modal="true" aria-label={"Visual da Samira "+skinSet[selected].name} onClick={e=>e.stopPropagation()} initial={{y:30,scale:.96}} animate={{y:0,scale:1}} exit={{y:20,opacity:0}}><img src={AS+"samira-"+skinSet[selected].id+".jpg"} alt={"Samira "+skinSet[selected].name}/><button onClick={()=>setSelected(null)} className="close-modal" aria-label="Fechar"><X/></button><div className="modal-text"><small>{skinSet[selected].tier}</small><h3>SAMIRA · {skinSet[selected].name}</h3><p>{skinSet[selected].subtitle}</p><div className="modal-nav"><button onClick={()=>setSelected((selected+skinSet.length-1)%skinSet.length)} aria-label="Anterior"><ChevronLeft/></button><span>{selected+1} / {skinSet.length}</span><button onClick={()=>setSelected((selected+1)%skinSet.length)} aria-label="Próxima"><ChevronRight/></button></div></div></motion.div></motion.div>}</AnimatePresence>
-</section>}
-function RecentGames({d}){const items=[...(d.history||[])].slice(0,6);return <section className="panel recent" id="partidas"><Corners/><div className="panel-simple-head"><h2>ÚLTIMAS PARTIDAS</h2><a href="#historico">VER TODAS <ArrowUpRight size={14}/></a></div>
-<div className="game-rows">{items.map((m,i)=><div className="game-row" key={m.id||i}><Avatar className="recent-avatar"/><Badge result={m.result}/><div className="game-desc"><b className={m.result==="Vitória"?"green":"red"}>{m.result.toUpperCase()}</b><span className={m.delta<0?"red":"green"}>{m.delta>0?"+":""}{m.delta}</span></div>{m.k!=null&&<div className="game-kda">{m.k}/{m.d}/{m.a}</div>}<Extra m={m}/><time>{m.date?.split("-").reverse().slice(0,2).join("/")}</time></div>)}</div>
-{!items.length&&<p className="nothing">Nenhuma partida registrada.</p>}
-</section>}
+function Skins(){
+ const scrollRef=useRef(null),[selected,setSelected]=useState(null);
+ const close=React.useCallback(()=>setSelected(null),[]);
+ const move=dir=>scrollRef.current?.scrollBy({left:dir*(scrollRef.current.clientWidth*.72),behavior:"smooth"});
+ return <section className="panel skins loading-card-gallery" id="skins"><Corners/>
+ <div className="skin-section-heading"><div className="panel-heading skin-header"><div className="medallion"><Avatar/></div><div><h2>ARSENAL DA SAMIRA</h2><small>O ESTILO NUNCA MORRE.</small></div></div><span className="gallery-guide">8 VISUAIS <span>·</span> DESLIZE PARA EXPLORAR</span></div>
+ <div className="skins-gallery-shell"><button className="gallery-arrow prev" onClick={()=>move(-1)} aria-label="Skins anteriores"><ChevronLeft/></button>
+ <div className="skins-gallery" ref={scrollRef} aria-label="Skins da Samira, uma única fileira">{skinSet.map((skin,index)=><button className="skin-card loading-card" key={skin.id} style={{"--skin-accent":skin.color}} onClick={()=>setSelected(index)} aria-label={"Ver "+skin.officialName}>
+ <img className="skin-art" src={AS+"samira-"+skin.id+".jpg"} style={{objectPosition:skin.focus+" center"}} loading="lazy" alt={skin.officialName}/><span className="skin-vignette"/><span className="skin-frame"/><span className="skin-number">{String(index+1).padStart(2,"0")}</span>
+ <span className="skin-caption"><span className="skin-champion">SAMIRA</span><strong>{skin.name}</strong><span className="skin-divider"/><span className="skin-profile"><Avatar/></span></span>
+ </button>)}</div><button className="gallery-arrow next" onClick={()=>move(1)} aria-label="Próximas skins"><ChevronRight/></button></div>
+ <div className="gallery-bottom"><span>ARTES OFICIAIS · WILD RIFT</span><span>TOQUE PARA AMPLIAR <ArrowUpRight size={12}/></span></div>
+ {selected!==null&&<Modal title={skinSet[selected].officialName} onClose={close} className="skin-modal skin-viewer"><img src={AS+"samira-"+skinSet[selected].id+".jpg"} alt={skinSet[selected].officialName}/><div className="modal-text"><small>ARSENAL DA SAMIRA</small><h3>{skinSet[selected].officialName}</h3><div className="modal-nav"><button onClick={()=>setSelected((selected+skinSet.length-1)%skinSet.length)} aria-label="Skin anterior"><ChevronLeft/></button><span>{selected+1} / {skinSet.length}</span><button onClick={()=>setSelected((selected+1)%skinSet.length)} aria-label="Próxima skin"><ChevronRight/></button></div></div></Modal>}
+ </section>
+}
+function RecentGames({d}){
+ const [all,setAll]=useState(false),[selected,setSelected]=useState(null);
+ const close=React.useCallback(()=>setSelected(null),[]);
+ const items=(d.history||[]).slice(0,all?undefined:6);
+ const formatDate=date=>date?.split("-").reverse().join("/")||"Data não informada";
+ return <section className="panel recent wildrift-history" id="partidas"><Corners/><div className="panel-simple-head"><div><span className="eyebrow">CADA PARTIDA CONTA</span><h2>ÚLTIMAS PARTIDAS</h2></div><span className="history-count">{(d.history||[]).length} REGISTRADAS</span></div>
+ <div className="game-rows" role="list">{items.map(match=><article className={"game-row match-history-row "+(match.result==="Vitória"?"history-win":"history-loss")} key={match.id} role="listitem">
+ <div className="match-portrait"><Avatar/><span aria-hidden="true">{match.result==="Vitória"?"V":"D"}</span></div>
+ <div className="match-outcome"><strong>{match.result.toUpperCase()}</strong><span>{match.mode||"Ranqueada"} · Samira</span><b className={"history-delta "+(match.delta<0?"red":"green")}>{match.delta==null?"PONTOS NÃO INFORMADOS":(match.delta>0?"+":"")+match.delta+" PONTOS"}</b></div>
+ <div className="history-kda"><strong>{match.k!=null?match.k+"/"+match.d+"/"+match.a:"—"}</strong><span>K / D / A</span></div>
+ <div className="history-awards"><Medals match={match}/></div>
+ <div className="history-date"><time>{formatDate(match.date)}</time>{match.scoreAfter!=null&&<span>{n(match.scoreAfter)} pontos</span>}</div>
+ <button className="match-detail-button" onClick={()=>setSelected(match)} aria-label={"Detalhes da partida "+match.id}><ScrollText size={20}/></button>
+ </article>)}</div>
+ {!items.length&&<p className="nothing">Sua próxima partida começa esta história.</p>}
+ {(d.history||[]).length>6&&<button className="history-more" onClick={()=>setAll(!all)}>{all?"Mostrar recentes":"Ver todo o histórico ("+d.history.length+")"}<ChevronRight size={16}/></button>}
+ {selected&&<Modal title="Detalhes da partida" onClose={close} className="match-details-modal"><span className="eyebrow">{formatDate(selected.date)}</span><h2 className={selected.result==="Vitória"?"green":"red"}>{selected.result.toUpperCase()}</h2><div className="detail-champion"><Avatar/><div><strong>SAMIRA</strong><span>{selected.mode||"Ranqueada"}</span></div><Medals match={selected}/></div><dl className="match-facts">{[["KDA",selected.k!=null?selected.k+"/"+selected.d+"/"+selected.a:null],["Variação",selected.delta!=null?(selected.delta>0?"+":"")+selected.delta:null],["Champion Score",selected.scoreAfter],["Placar das equipes",selected.teamScore],["Ouro",selected.gold],["Desempenho",selected.performanceScore],["Marcas após a partida",selected.marksAfter]].filter(([,value])=>value!=null).map(([label,value])=><div key={label}><dt>{label}</dt><dd>{typeof value==="number"?n(value):value}</dd></div>)}</dl><p className="confirmed-note">Somente informações confirmadas desta partida.</p></Modal>}
+ </section>
+}
 function Achievements({d}){const trophies=[{name:"DUAS PENTAS",detail:"30/3/5 em partida Mestre",Icon:Skull},{name:"PENTAKILLS",detail:n(d.pentakills??12)+" no histórico",Icon:Crown},{name:"MVP",detail:n(d.mvps??121)+" vezes",Icon:Star},{name:"TOP 200",detail:"Na caçada",Icon:LockKeyhole}];const [sel,setSel]=useState(null);return <section className="achieve-section" id="conquistas"><div className="achievement-title"><Trophy size={20}/> CÂMARA DE CONQUISTAS</div><div className="achievement-tiles">{trophies.map((a,i)=><button className="achievement" key={a.name} onClick={()=>setSel(a)}><div className="achievement-medal"><a.Icon size={29}/></div><div><b>{a.name}</b><span>{a.detail}</span></div></button>)}</div><AnimatePresence>{sel&&<motion.div className="modal-shade" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setSel(null)}><motion.div className="achieve-modal" initial={{scale:.92}} animate={{scale:1}} exit={{scale:.92}} onClick={e=>e.stopPropagation()}><button onClick={()=>setSel(null)} className="close-modal" aria-label="Fechar"><X/></button><Trophy size={60}/><h3>{sel.name}</h3><p>{sel.detail}</p></motion.div></motion.div>}</AnimatePresence></section>}
-function App(){const [data,setData]=useState(fallback);const [connected,setConnected]=useState(false);const [updated,setUpdated]=useState(null);
-useEffect(()=>{let alive=true;async function sync(){try{const res=await fetch("/api/tracker",{cache:"no-store"});if(!res.ok)throw Error(String(res.status));const next=await res.json();if(alive&&typeof next.score==="number"){setData({...fallback,...next});setConnected(true);setUpdated(new Date())}}catch(e){if(alive)setConnected(false)}}sync();const timer=setInterval(sync,30000);return()=>{alive=false;clearInterval(timer)}},[]);
-return <div className="root"><Hero d={data}/><MatchTicker history={data.history}/>
-<main className="dashboard"><div className="top-grid"><Hunt d={data}/><Overview d={data}/><DragonRole d={data}/></div>
-<div className="bottom-grid"><Skins/><RecentGames d={data}/></div><Achievements d={data}/></main>
-<footer className="footer" id="historico"><span>MATABUKS / SAMIRISMO — PROJETO DE FÃ NÃO OFICIAL.</span><span>{connected?"● DADOS SINCRONIZADOS":"◌ EXIBINDO ÚLTIMO REGISTRO SALVO"}</span><span>Partidas e estatísticas: somente dados informados.</span></footer>
-</div>}
+function App(){
+ const [data,setData]=useState(()=>{try{const saved=JSON.parse(localStorage.getItem("matabuks-tracker-v4"));return saved&&Number.isFinite(saved.score)&&Array.isArray(saved.history)?{...fallback,...saved}:fallback}catch{return fallback}});
+ const [connected,setConnected]=useState(false),[updated,setUpdated]=useState(null);
+ useEffect(()=>{let alive=true,busy=false;const controller=new AbortController();async function sync(){if(busy)return;busy=true;try{const res=await fetch("/api/tracker",{cache:"no-store",signal:controller.signal});if(!res.ok)throw Error(String(res.status));const next=await res.json();if(alive&&Number.isFinite(next.score)&&Array.isArray(next.history)){setData(next);setConnected(!next.integration?.stale);setUpdated(next.integration?.checkedAt||new Date().toISOString());try{localStorage.setItem("matabuks-tracker-v4",JSON.stringify(next))}catch{}}}catch{if(alive)setConnected(false)}finally{busy=false}}sync();const timer=setInterval(sync,30000);return()=>{alive=false;controller.abort();clearInterval(timer)}},[]);
+ return <div className="root"><Hero d={data}/><MatchTicker history={data.history}/>
+ <main className="dashboard"><div className="dashboard-toolbar"><div><span className="journey-label">SUA JORNADA COM SAMIRA</span><span className={"sync-status "+(connected?"is-connected":"")} role="status"><i/>{connected?"Dados sincronizados":"Últimos dados disponíveis"}{updated&&<small> · {new Date(updated).toLocaleTimeString("pt-BR",{timeZone:"America/Manaus",hour:"2-digit",minute:"2-digit"})}</small>}</span></div><MatchForm data={data}/></div>
+ {data.integration?.warnings?.length>0&&<div className="reconciliation-note" role="status"><Info size={16}/> Há informações de pontuação ou conquistas aguardando reconciliação. <details><summary>Ver observações</summary>{data.integration.warnings.map(text=><p key={text}>{text}</p>)}</details></div>}
+ <div className="top-grid"><Hunt d={data}/><Overview d={data}/><DragonRole d={data}/></div>
+ <div className="arsenal-section"><Skins/></div><RecentGames d={data}/><Achievements d={data}/></main>
+ <footer className="footer" id="historico"><span>MATABUKS / SAMIRISMO — PROJETO DE FÃ NÃO OFICIAL.</span><span>{connected?"● DADOS SINCRONIZADOS":"◌ ÚLTIMOS DADOS DISPONÍVEIS"}</span><span>Totais históricos estimados. Conquistas confirmadas.</span></footer>
+ </div>
+}
 createRoot(document.getElementById("root")).render(<App/>);

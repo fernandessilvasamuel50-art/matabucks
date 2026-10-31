@@ -16,4 +16,4 @@ O CSS original usava `/img/hero-samira.jpg`, arquivo ausente. A manutenção tro
 
 ## Limites conhecidos
 
-A integração GitHub desta sessão oferece leitura e gravação em repositórios acessíveis, mas não criação de repositório. O destino remoto precisa existir e estar autorizado. A escrita Global Config desta sessão continua bloqueada por validação do conector; não foi alterado o tracker para contornar essa falha.
+Na recuperação inicial, a integração GitHub não oferecia criação de repositório. O usuário posteriormente forneceu `fernandessilvasamuel50-art/matabucks`, confirmado e autorizado; o código recuperado foi enviado a esse remoto. A escrita Global Config continuou bloqueada por validação do conector. A manutenção posterior adotou um checkpoint preservado e eventos autenticados nas Issues do mesmo GitHub, conforme `CHATGPT_TRACKER.md`; o Global Config original permanece preservado para rollback.

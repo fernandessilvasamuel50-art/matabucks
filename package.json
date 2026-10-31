@@ -6,14 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "@vercel/functions": "^3.10.5",
+    "@vercel/global-config": "^1.5.1",
     "lucide-react": "^0.468.0",
     "motion": "^12.0.0",
-    "@vercel/global-config": "^1.5.1"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "vite": "^6.0.0"
